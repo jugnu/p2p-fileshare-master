@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>mSquared FileTransfer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href='http://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css'>
+  <style>
+  h1 {
+font-family: 'Roboto', sans-serif;
+font-size: 2em;
+padding-bottom: 100px;
+  }
+  body {
+    font-family: 'Roboto', sans-serif;
+  }
+   table {
+    display: inline-block;
+    border: 1px dashed black;
+    max-width: 40%;
+   }
+   #mylist {
+    margin-right: 5%;
+   }
+   #theirlist {
+    margin-left: 5%;
+   }
+   td {
+    padding: 10px;
+   }
+   .content {
+    width:100%;
+    text-align: center;
+   }
+   .thead {
+    font-size: 1.5em;
+   }
+   .tbody {
+    font-size: 0.9em;
+    color: gray;
+   }
+   tr td {
+    max-width: 20%;
+    width: 10%;
+   }
+   td span:hover {
+    cursor: pointer;
+   }
+</style>
+
+</head>
+<body>
+  <div class="content">
+    <h1>mSquared FileTransfer</h1>
+
+    <table id="mylist" width="50%">
+      <tr><td colspan="5">Local Files</td></tr>
+      <tr class="thead"><td>Type</td>
+        <td>Name</td>
+        <td>Date/Time</td>
+        <td>Size</td>
+        <td>Actions</td></tr>
+    </table>
+     <table id="theirlist" width="50%">
+      <tr><td colspan="5">Remote Files</td></tr>
+      <tr class="thead"><td>Type</td>
+        <td>Name</td>
+        <td>Date/Time</td>
+        <td>Size</td>
+        <td>Actions</td></tr>
+    </table>
+  </div>
+</body>
+
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script>
+function clean(s) {
+  return s.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
+}
+$(document).ready(function() {
+
+showindex(0);
+showindex(1);
+//   window.setInterval(function() {
+// showindex(0);
+// showindex(1);
+//   }, 5000);
+});
+  function showindex(who) {
+          document.getElementById('theirlist').innerHTML = "<tr><td colspan='5' style='border-bottom: 1px dashed black;'>Remote Files</td></tr><tr class='thead'><td>Type</td>\
+        <td>Name</td>\
+        <td>Date/Time</td>\
+        <td>Size</td>\
+        <td>Actions</td></tr>";
+          document.getElementById('mylist').innerHTML = "<tr><td colspan='5' style='border-bottom: 1px dashed black;'>Local Files</td></tr><tr class='thead'><td>Type</td>\
+        <td>Name</td>\
+        <td>Date/Time</td>\
+        <td>Size</td>\
+        <td>Actions</td></tr>";
+
+    if (who == 0) {
+      who = "me";
+    }
+    else {
+      who = "they";
+    }
+      $.ajax({
+        url: '/ind',
+        method: 'POST',
+        data: { whose: who },
+        success: function(data) {
+          data = clean(data);
+          console.log(data);
+          data = JSON.parse(data);
+          // console.log(data["file_list"].length);
+          if (who == "me") {
+            var action = "Upload";
+          }
+          else {
+            var action = "Download";
+          }
+          for (var x = 0; x<data['file_list'].length; x++)  {
+            var item = "<tr class='tbody'><td>"+ data['file_list'][x]["type"] + "</td><td>" + data['file_list'][x]["name"] + "</td><td>" +data['file_list'][x]["date"]+" "+data['file_list'][x]["time"] + "</td><td>" +data['file_list'][x]["size"] + "</td><td><u><span onclick='fileTransfer(\""+action+"\", \"tcp\", \""+data['file_list'][x]["name"]+"\")'>" + action + "-TCP</span><br /><span onclick='fileTransfer(\""+action+"\", \"udp\", \""+data['file_list'][x]["name"]+"\")'>"+action+"-UDP</span></u></td></tr>";
+            // console.log(item);
+            if (who == "me") {
+          document.getElementById('mylist').innerHTML += item;
+
+            }
+            else if (who == "they") {
+          document.getElementById('theirlist').innerHTML += item;
+
+            }
+          }
+          
+        }
+      });
+   }
+   function fileTransfer(action, protocol, filename) {
+    console.log(action, protocol, filename);
+    filename = action.toLowerCase()[0]+protocol[0]+filename;
+    console.log(action, protocol, filename);
+
+    $.ajax({
+        url: '/transfer',
+        method: 'POST',
+        data: { act: action, via:protocol, file:filename },
+        success: function(data) {
+          }
+      });
+          alert("Your request has been processed successfully.");
+
+  }
+</script>
+</html>
